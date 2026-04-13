@@ -31,7 +31,35 @@ export const PreviewGallery: React.FC = observer(() => {
 
     container.addEventListener("wheel", handleWheel);
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [folder, currentPage, itemsPerPage, columns]);
+  }, [folder]);
+
+
+
+  // On folder changed - set first page
+  useEffect(() => {
+    if (!folder) return;
+    const entry = project.database?.getFolderEntry(folder.path);
+    const last_rating = entry?.lastRating ?? 0;
+    const last_page = entry?.lastPageByRating[last_rating] ?? 1;
+    setMinRating(last_rating);
+    setCurrentPage(Math.max(last_page, 1));
+  }, [folder]);
+
+  useEffect(() => {
+    if (!folder) return;
+    const entry = project.database?.getFolderEntry(folder.path);
+    const last_page = entry?.lastPageByRating[minRating] ?? 1;
+    project.database?.setFolderRating(folder.path, minRating);
+    setCurrentPage(Math.max(last_page, 1));
+  }, [minRating]);
+
+
+  // On page changed - store
+  useEffect(() => {
+    if (folder) project.database?.setFolderPage(folder?.path, minRating, currentPage)
+  }, [currentPage])
+
+
 
   if (!folder) return <div>No folder selected.</div>;
   if (folder.files.length === 0) return <div>No media found in this folder.</div>;
@@ -153,7 +181,7 @@ export const PreviewGallery: React.FC = observer(() => {
         }}
       >
         {mediaToShow.map((media, index) => (
-          <MediaPreview key={index} media={media} width="100%" />
+          <MediaPreview key={media.path} media={media} width="100%" />
         ))}
       </div>
 

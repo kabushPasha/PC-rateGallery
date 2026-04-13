@@ -59,7 +59,7 @@ export const MediaFolderTreeItem: React.FC<MediaFolderTreeItemProps> = observer(
         >
           {collapsed ? "▶ " : "▼ "}
           {folder.name}
-          {folder.files.length > 0 && ` (${folder.files.length})`}
+          {folder.loaded && ` (${folder.ratingSummary})`}
           {loading && " (loading...)"}
         </span>
 

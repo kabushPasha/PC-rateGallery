@@ -12,11 +12,18 @@ export interface RatingDatabase {
   tags: string[];
   models: string[];
   bookmarks?: Record<string, number | null>; // path -> page
+  folders: Record<string, FolderEntry>;
+}
+
+export interface FolderEntry {
+  lastRating?: number;
+  lastPageByRating: Record<number, number>;
+  sortedByRating: Record<number, boolean>;
 }
 
 export class Database {
   folder: MediaFolder;
-  data: RatingDatabase = { media: {}, tags: [], models: [] };
+  data: RatingDatabase = { media: {}, tags: [], models: [], folders: {} };
   private loaded: boolean = false;
   private dbFileHandle: Media | null = null; // store the db file as Media
 
@@ -38,13 +45,13 @@ export class Database {
         const fileData = await ratingFile.getFile();
         const text = await fileData.text();
         const json = JSON.parse(text) as RatingDatabase;
-        this.data = json;
+        this.data = {...{ media: {}, tags: [], models: [], bookmarks: {}, folders: {} }, ...json};
       } catch (err) {
         console.error("Failed to read or parse rating_database.json:", err);
       }
     } else {
       // initialize empty structure
-      this.data = { media: {}, tags: [], models: [], bookmarks: {} };
+      this.data = { media: {}, tags: [], models: [], bookmarks: {}, folders: {} };
 
       // Create a new Media wrapper for the db file, but don’t create it on disk yet
       this.dbFileHandle = null;
@@ -107,5 +114,44 @@ export class Database {
 
   getFolderBookmark(path: string): number | null {
     return this.data.bookmarks?.[path] ?? null;
+  }
+
+  // Fodlers Helpers
+  private createDefaultFolderEntry(): FolderEntry {
+    const lastPageByRating: Record<number, number> = {};
+    const sortedByRating: Record<number, boolean> = {};
+
+    for (let i = 0; i <= 5; i++) {
+      lastPageByRating[i] = 1;
+      sortedByRating[i] = false;
+    }
+
+    return {
+      lastRating: 0,
+      lastPageByRating,
+      sortedByRating
+    };
+  }
+
+  getFolderEntry(path: string): FolderEntry {    
+    if (!this.data.folders[path]) {
+      this.data.folders[path] = this.createDefaultFolderEntry();
+    }
+    return this.data.folders[path];
+  }
+
+  setFolderRating(path: string, rating: number) {
+    const folder = this.getFolderEntry(path);
+    folder.lastRating = rating;
+  }
+
+  setFolderPage(path: string, rating: number, page: number) {
+    const folder = this.getFolderEntry(path);
+    folder.lastPageByRating[rating] = page;
+  }
+
+  setFolderSorted(path: string, rating: number, sorted: boolean) {
+    const folder = this.getFolderEntry(path);
+    folder.sortedByRating[rating] = sorted;
   }
 }

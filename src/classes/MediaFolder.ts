@@ -20,17 +20,20 @@ export class MediaFolder {
     async readContents(): Promise<void> {
         if (this.loaded) return;
 
+        console.log("Loading:", this.path);
         const folders: MediaFolder[] = [];
         const files: Media[] = [];
 
         for await (const handle of (this.root_folder as any).values()) {
             if (handle.kind === "directory") {
-                folders.push(new MediaFolder(handle, this.path));
+                const subFolder = new MediaFolder(handle, this.path);
+                //await subFolder.readContents();
+                folders.push(subFolder);
             } else if (handle.kind === "file") {
                 files.push(new Media(handle, this.path));
             }
         }
-        
+
         runInAction(() => {
             this.folders = folders;
             this.files = files;
@@ -59,5 +62,36 @@ export class MediaFolder {
 
     clearBookmark() {
         this.setBookmark(null);
+    }
+
+    get ratingStats(): { total: number; ratings: number[] } {
+        const ratings = [0, 0, 0, 0, 0];
+        let total = 0;
+
+        // count current folder
+        for (const file of this.files) {
+            total++;
+
+            if (file.rating >= 1 && file.rating <= 5) {
+                ratings[file.rating - 1]++;
+            }
+        }
+
+        // include subfolders (recursive)
+        for (const folder of this.folders) {
+            const sub = folder.ratingStats;
+
+            total += sub.total;
+            for (let i = 0; i < 5; i++) {
+                ratings[i] += sub.ratings[i];
+            }
+        }
+
+        return { total, ratings };
+    }
+
+    get ratingSummary(): string {
+        const { total, ratings } = this.ratingStats;
+        return `${total} [ ${ratings.join(" | ")} ]`;
     }
 }
