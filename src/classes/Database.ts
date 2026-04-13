@@ -1,5 +1,6 @@
 import { MediaFolder } from "./MediaFolder";
 import { Media } from "./Media";
+import { makeAutoObservable } from "mobx";
 
 export interface MediaEntry {
   rating?: number;
@@ -19,6 +20,7 @@ export interface FolderEntry {
   lastRating?: number;
   lastPageByRating: Record<number, number>;
   sortedByRating: Record<number, boolean>;
+  done: boolean;
 }
 
 export class Database {
@@ -29,6 +31,8 @@ export class Database {
 
   constructor(folder: MediaFolder) {
     this.folder = folder;
+
+    makeAutoObservable(this, {});
   }
 
   /** Load rating_database.json if it exists */
@@ -45,7 +49,7 @@ export class Database {
         const fileData = await ratingFile.getFile();
         const text = await fileData.text();
         const json = JSON.parse(text) as RatingDatabase;
-        this.data = {...{ media: {}, tags: [], models: [], bookmarks: {}, folders: {} }, ...json};
+        this.data = { ...{ media: {}, tags: [], models: [], bookmarks: {}, folders: {} }, ...json };
       } catch (err) {
         console.error("Failed to read or parse rating_database.json:", err);
       }
@@ -129,11 +133,12 @@ export class Database {
     return {
       lastRating: 0,
       lastPageByRating,
-      sortedByRating
+      sortedByRating,
+      done: false,
     };
   }
 
-  getFolderEntry(path: string): FolderEntry {    
+  getFolderEntry(path: string): FolderEntry {
     if (!this.data.folders[path]) {
       this.data.folders[path] = this.createDefaultFolderEntry();
     }
@@ -153,5 +158,10 @@ export class Database {
   setFolderSorted(path: string, rating: number, sorted: boolean) {
     const folder = this.getFolderEntry(path);
     folder.sortedByRating[rating] = sorted;
+  }
+
+  setFolderDone(path: string, done: boolean) {
+    const folder = this.getFolderEntry(path);
+    folder.done = done;
   }
 }

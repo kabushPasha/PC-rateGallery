@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { observer } from "mobx-react-lite";
 import { Project } from "../classes/Project";
 import { MediaPreview } from "./MediaPreview";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStar } from '@fortawesome/free-solid-svg-icons';
+import { Button, ButtonGroup } from "react-bootstrap";
 
 export const PreviewGallery: React.FC = observer(() => {
   const project = Project.getInstance();
@@ -80,20 +83,6 @@ export const PreviewGallery: React.FC = observer(() => {
   const handleFirst = () => setCurrentPage(1);
   const handleLast = () => setCurrentPage(totalPages);
 
-  const setBookmark = () => {
-    folder.setBookmark(currentPage);
-  };
-
-  const goToBookmark = () => {
-    if (
-      folder.bookmark !== null &&
-      folder.bookmark >= 1 &&
-      folder.bookmark <= totalPages
-    ) {
-      setCurrentPage(folder.bookmark);
-    }
-  };
-
   return (
     <div ref={containerRef} style={{ padding: "1rem" }}>
       {/* Settings */}
@@ -139,12 +128,17 @@ export const PreviewGallery: React.FC = observer(() => {
           / {totalPages}
         </label>
 
-        {/** BOOKMARKS */}
-        <button onClick={setBookmark}> ⭐</button>
-        <button onClick={goToBookmark} disabled={folder.bookmark === null}>
-          go to page: {folder.bookmark}
-        </button>
-        {/**RATINGS */}
+        <ButtonGroup className="me-2" aria-label="rating group">
+          {[0, 1, 2, 3, 4, 5].map((rating) => (
+            <RatingButton
+              key={rating}
+              rating={rating}
+              count={folder.ratingStats.ratings[rating-1]}
+              onClick={setMinRating}
+            />
+          ))}
+        </ButtonGroup>
+
         <label>
           Min rating{" "}
           <input
@@ -156,6 +150,9 @@ export const PreviewGallery: React.FC = observer(() => {
             style={{ width: "3rem" }}
           />
         </label>
+
+
+
 
         <label>
           Max rating{" "}
@@ -180,7 +177,7 @@ export const PreviewGallery: React.FC = observer(() => {
           gap: "1rem",
         }}
       >
-        {mediaToShow.map((media, index) => (
+        {mediaToShow.map((media, _) => (
           <MediaPreview key={media.path} media={media} width="100%" />
         ))}
       </div>
@@ -208,3 +205,44 @@ export const PreviewGallery: React.FC = observer(() => {
     </div>
   );
 });
+
+
+
+
+
+type RatingButtonProps = {
+  rating: number;
+  count: number;
+  onClick: (rating: number) => void;
+};
+
+export default function RatingButton({
+  rating,
+  count,
+  onClick,
+}: RatingButtonProps) {
+  return (
+    <Button
+      onClick={() => onClick(rating)}
+      className="position-relative overflow-hidden"
+    >
+      <FontAwesomeIcon
+        icon={faStar}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.2,
+          fontSize: "1.35rem",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
+      <span style={{ position: "relative", zIndex: 1 }}>
+        {count}
+      </span>
+    </Button>
+  );
+}
