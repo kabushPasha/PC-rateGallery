@@ -14,6 +14,10 @@ export const PreviewGallery: React.FC = observer(() => {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const [minRating, setMinRating] = useState<number>(0);
+  const [maxRating, setMaxRating] = useState<number>(5);
+
+
   // Ensure hooks are always called
   useEffect(() => {
     const container = containerRef.current;
@@ -32,16 +36,35 @@ export const PreviewGallery: React.FC = observer(() => {
   if (!folder) return <div>No folder selected.</div>;
   if (folder.files.length === 0) return <div>No media found in this folder.</div>;
 
-  const totalPages = Math.ceil(folder.files.length / itemsPerPage);
+
+  const filteredFiles = folder.files
+    .filter((media) => media.rating >= minRating && media.rating <= maxRating)
+    .sort((a, b) => a.name.localeCompare(b.name)); // sort by name alphabetically
+
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const mediaToShow = folder.files.slice(startIndex, endIndex);
+  const mediaToShow = filteredFiles.slice(startIndex, endIndex);
 
   // Pagination handlers
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   const handleFirst = () => setCurrentPage(1);
   const handleLast = () => setCurrentPage(totalPages);
+
+  const setBookmark = () => {
+    folder.setBookmark(currentPage);
+  };
+
+  const goToBookmark = () => {
+    if (
+      folder.bookmark !== null &&
+      folder.bookmark >= 1 &&
+      folder.bookmark <= totalPages
+    ) {
+      setCurrentPage(folder.bookmark);
+    }
+  };
 
   return (
     <div ref={containerRef} style={{ padding: "1rem" }}>
@@ -87,6 +110,38 @@ export const PreviewGallery: React.FC = observer(() => {
           />
           / {totalPages}
         </label>
+
+        {/** BOOKMARKS */}
+        <button onClick={setBookmark}> ⭐</button>
+        <button onClick={goToBookmark} disabled={folder.bookmark === null}>
+          go to page: {folder.bookmark}
+        </button>
+        {/**RATINGS */}
+        <label>
+          Min rating{" "}
+          <input
+            type="number"
+            min={0}
+            max={5}
+            value={minRating}
+            onChange={(e) => setMinRating(Number(e.target.value))}
+            style={{ width: "3rem" }}
+          />
+        </label>
+
+        <label>
+          Max rating{" "}
+          <input
+            type="number"
+            min={0}
+            max={5}
+            value={maxRating}
+            onChange={(e) => setMaxRating(Number(e.target.value))}
+            style={{ width: "3rem" }}
+          />
+        </label>
+
+
       </div>
 
       {/* Gallery Grid */}

@@ -11,6 +11,7 @@ export interface RatingDatabase {
   media: Record<string, MediaEntry>; // media_name -> MediaEntry
   tags: string[];
   models: string[];
+  bookmarks?: Record<string, number | null>; // path -> page
 }
 
 export class Database {
@@ -43,7 +44,7 @@ export class Database {
       }
     } else {
       // initialize empty structure
-      this.data = { media: {}, tags: [], models: [] };
+      this.data = { media: {}, tags: [], models: [], bookmarks: {} };
 
       // Create a new Media wrapper for the db file, but don’t create it on disk yet
       this.dbFileHandle = null;
@@ -95,5 +96,16 @@ export class Database {
     } catch (err) {
       console.error("Failed to save rating_database.json:", err);
     }
+  }
+
+  setFolderBookmark(path: string, page: number | null) {
+    if (!this.data.bookmarks) {
+      this.data.bookmarks = {};
+    }
+    this.data.bookmarks[path] = page;
+  }
+
+  getFolderBookmark(path: string): number | null {
+    return this.data.bookmarks?.[path] ?? null;
   }
 }
