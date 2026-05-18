@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { observer } from "mobx-react-lite";
 import { Project } from "../classes/Project";
-import { MediaPreview } from "./MediaPreview";
+import { getRarityColor, MediaPreview } from "./MediaPreview";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 import { Button, ButtonGroup } from "react-bootstrap";
@@ -67,10 +67,24 @@ export const PreviewGallery: React.FC = observer(() => {
   if (!folder) return <div>No folder selected.</div>;
   if (folder.files.length === 0) return <div>No media found in this folder.</div>;
 
+  const [shuffle, setShuffle] = useState<boolean>(false);
 
-  const filteredFiles = folder.files
-    .filter((media) => media.rating >= minRating && media.rating <= maxRating)
-    .sort((a, b) => a.name.localeCompare(b.name)); // sort by name alphabetically
+  const filteredFiles = useMemo(() => {
+    const files = folder.files.filter(
+      (media) => media.rating >= minRating && media.rating <= maxRating
+    );
+
+    if (shuffle) {
+      const shuffled = [...files];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    return files.sort((a, b) => a.name.localeCompare(b.name));
+  }, [folder.files, minRating, maxRating, shuffle]);
 
   const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -133,7 +147,7 @@ export const PreviewGallery: React.FC = observer(() => {
             <RatingButton
               key={rating}
               rating={rating}
-              count={folder.ratingStats.ratings[rating-1]}
+              count={folder.ratingStats.ratings[rating - 1]}
               onClick={setMinRating}
             />
           ))}
@@ -152,8 +166,6 @@ export const PreviewGallery: React.FC = observer(() => {
         </label>
 
 
-
-
         <label>
           Max rating{" "}
           <input
@@ -164,6 +176,18 @@ export const PreviewGallery: React.FC = observer(() => {
             onChange={(e) => setMaxRating(Number(e.target.value))}
             style={{ width: "3rem" }}
           />
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={shuffle}
+            onChange={(e) => {
+              setShuffle(e.target.checked);
+              setCurrentPage(1);
+            }}
+          />
+          Shuffle
         </label>
 
 
@@ -225,6 +249,9 @@ export default function RatingButton({
     <Button
       onClick={() => onClick(rating)}
       className="position-relative overflow-hidden"
+      style={{
+        backgroundColor: getRarityColor(rating)
+      }}
     >
       <FontAwesomeIcon
         icon={faStar}
@@ -237,6 +264,7 @@ export default function RatingButton({
           fontSize: "1.35rem",
           zIndex: 0,
           pointerEvents: "none",
+
         }}
       />
 

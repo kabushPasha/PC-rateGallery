@@ -98,7 +98,10 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
         borderRadius: 4,
         overflow: "hidden",
         backgroundColor: "#000",
-        userSelect: "none"
+        userSelect: "none",
+
+        // add these
+        border: `6px solid ${getRarityColor(media.rating)}`,
       }}
     >
       {type.startsWith("video/") ? (
@@ -125,3 +128,22 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
     </div>
   );
 });
+
+
+  // Add this helper above return()
+  export const getRarityColor = (rating: number) => {
+    switch (rating) {
+      case 0:
+        return "#343434";
+      case 1:
+        return "#927249";
+      case 2:
+        return "#7aa9bc";
+      case 3:
+        return "gold";
+      case 4:
+        return "#ff5100";
+      default:
+        return "transparent";
+    }
+  };
