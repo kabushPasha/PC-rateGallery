@@ -48,8 +48,20 @@ export class MediaFolder {
         });
     }
 
+    async readContentsRecursive(): Promise<void> {
+        await this.readContents();
+        await Promise.all(this.folders.map(f => f.readContentsRecursive()));
+    }
+
     get name(): string {
         return this.root_folder.name;
+    }
+
+    get files_recursive(): Media[] {
+        return [
+            ...this.files,
+            ...this.folders.flatMap(folder => folder.files_recursive),
+        ];
     }
 
     setBookmark(page: number | null) {

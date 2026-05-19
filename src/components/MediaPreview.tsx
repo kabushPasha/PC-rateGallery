@@ -61,6 +61,15 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    const a = document.createElement("a");
+    a.href = url!;
+    a.download = media.name || "download";
+    a.click();
+  };
+
   const renderRatingDots = () => {
     const dots = [];
     for (let i = 0; i < maxRating; i++) {
@@ -90,6 +99,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
   return (
     <div
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       style={{
         position: "relative",
         width,
@@ -130,20 +140,20 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
 });
 
 
-  // Add this helper above return()
-  export const getRarityColor = (rating: number) => {
-    switch (rating) {
-      case 0:
-        return "#343434";
-      case 1:
-        return "#927249";
-      case 2:
-        return "#7aa9bc";
-      case 3:
-        return "gold";
-      case 4:
-        return "#ff5100";
-      default:
-        return "transparent";
-    }
-  };
+// Add this helper above return()
+export const getRarityColor = (rating: number) => {
+  switch (rating) {
+    case 0:
+      return "#343434";
+    case 1:
+      return "#927249";
+    case 2:
+      return "#7aa9bc";
+    case 3:
+      return "gold";
+    case 4:
+      return "#ff5100";
+    default:
+      return "transparent";
+  }
+};

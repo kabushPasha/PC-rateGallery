@@ -20,6 +20,7 @@ export const PreviewGallery: React.FC = observer(() => {
   const [minRating, setMinRating] = useState<number>(0);
   const [maxRating, setMaxRating] = useState<number>(5);
 
+  const [recursive, setRecursive] = useState<boolean>(false);
 
   // Ensure hooks are always called
   useEffect(() => {
@@ -27,6 +28,7 @@ export const PreviewGallery: React.FC = observer(() => {
     if (!container || !folder) return;
 
     const handleWheel = (e: WheelEvent) => {
+      console.log("wheel");
       e.preventDefault();
       if (e.deltaY > 0) setCurrentPage((prev) => Math.min(prev + 1, totalPages));
       else if (e.deltaY < 0) setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -36,6 +38,10 @@ export const PreviewGallery: React.FC = observer(() => {
     return () => container.removeEventListener("wheel", handleWheel);
   }, [folder]);
 
+  useEffect(() => {
+    if (!folder || !recursive) return;
+    folder.readContentsRecursive();
+  }, [folder, recursive]);
 
 
   // On folder changed - set first page
@@ -62,15 +68,16 @@ export const PreviewGallery: React.FC = observer(() => {
     if (folder) project.database?.setFolderPage(folder?.path, minRating, currentPage)
   }, [currentPage])
 
-
-
-  if (!folder) return <div>No folder selected.</div>;
-  if (folder.files.length === 0) return <div>No media found in this folder.</div>;
-
   const [shuffle, setShuffle] = useState<boolean>(false);
 
+  const sourceFiles = useMemo(() => {
+    if (!folder) return [];
+    return recursive ? folder.files_recursive : folder.files;
+  }, [recursive,folder])
+
+
   const filteredFiles = useMemo(() => {
-    const files = folder.files.filter(
+    const files = sourceFiles.filter(
       (media) => media.rating >= minRating && media.rating <= maxRating
     );
 
@@ -84,7 +91,24 @@ export const PreviewGallery: React.FC = observer(() => {
     }
 
     return files.sort((a, b) => a.name.localeCompare(b.name));
-  }, [folder.files, minRating, maxRating, shuffle]);
+  }, [minRating, maxRating, shuffle, sourceFiles]);
+
+
+  if (!folder) return <div>No folder selected.</div>;
+  if (sourceFiles.length === 0) return <><div>No media found in this folder!!</div>
+    <label>
+      <input
+        type="checkbox"
+        checked={recursive}
+        onChange={(e) => {
+          setRecursive(e.target.checked);
+          setCurrentPage(1);
+        }}
+      />
+      Recursive
+    </label>
+  </>;
+
 
   const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -101,6 +125,18 @@ export const PreviewGallery: React.FC = observer(() => {
     <div ref={containerRef} style={{ padding: "1rem" }}>
       {/* Settings */}
       <div style={{ marginBottom: "1rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+        <label>
+          <input
+            type="checkbox"
+            checked={recursive}
+            onChange={(e) => {
+              setRecursive(e.target.checked);
+              setCurrentPage(1);
+            }}
+          />
+          Recursive
+        </label>
+
         <label>
           Columns:{" "}
           <input
