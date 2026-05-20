@@ -3,7 +3,7 @@ import { observer } from "mobx-react-lite";
 import { Project } from "../classes/Project";
 import { getRarityColor, MediaPreview } from "./MediaPreview";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faShuffle, faStar } from '@fortawesome/free-solid-svg-icons';
 import { Button, ButtonGroup } from "react-bootstrap";
 
 export const PreviewGallery: React.FC = observer(() => {
@@ -69,11 +69,12 @@ export const PreviewGallery: React.FC = observer(() => {
   }, [currentPage])
 
   const [shuffle, setShuffle] = useState<boolean>(false);
+  const [autorate, setAutorate] = useState<boolean>(false);
 
   const sourceFiles = useMemo(() => {
     if (!folder) return [];
     return recursive ? folder.files_recursive : folder.files;
-  }, [recursive,folder])
+  }, [recursive, folder])
 
 
   const filteredFiles = useMemo(() => {
@@ -214,17 +215,23 @@ export const PreviewGallery: React.FC = observer(() => {
           />
         </label>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={shuffle}
-            onChange={(e) => {
-              setShuffle(e.target.checked);
-              setCurrentPage(1);
-            }}
-          />
-          Shuffle
-        </label>
+        <Button
+          variant={shuffle ? "warning" : "outline-secondary"}
+          onClick={() => {
+            setShuffle((prev) => !prev);
+            setCurrentPage(1);
+          }}
+        >
+          <FontAwesomeIcon icon={faShuffle} />
+        </Button>
+
+        <Button
+          variant={autorate ? "warning" : "outline-secondary"}
+          title="autorate"
+          onClick={() => { setAutorate((prev) => !prev); }}
+        >
+          <FontAwesomeIcon icon={faEye} />
+        </Button>
 
 
       </div>
@@ -238,7 +245,7 @@ export const PreviewGallery: React.FC = observer(() => {
         }}
       >
         {mediaToShow.map((media, _) => (
-          <MediaPreview key={media.path} media={media} width="100%" />
+          <MediaPreview key={media.path} media={media} width="100%" autorate={autorate} />
         ))}
       </div>
 

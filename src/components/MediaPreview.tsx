@@ -7,13 +7,15 @@ interface MediaPreviewProps {
   width?: string | number;
   height?: string | number;
   maxRating?: number;
+  autorate?: boolean;
 }
 
 export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
   media,
   width = "100%",
   height = "auto",
-  maxRating = 5
+  maxRating = 5,
+  autorate = false,
 }) => {
   const [url, setUrl] = useState<string | null>(null);
   const [type, setType] = useState<string>("");
@@ -45,10 +47,16 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
       setUrl(objectUrl);
       setType(mimeType);
     };
-
     loadMedia();
+
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [media]);
+
+  useEffect(() => {    
+    // First time seen add base rating
+    if(media.rating == 0 && autorate ){      
+      media.setRating(1);
+    }},[media,autorate])
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
@@ -144,14 +152,16 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
 export const getRarityColor = (rating: number) => {
   switch (rating) {
     case 0:
-      return "#343434";
+      return "#202020";
     case 1:
-      return "#927249";
+      return "#757575";
     case 2:
-      return "#7aa9bc";
+      return "#927249";
     case 3:
-      return "gold";
+      return "#7aa9bc";
     case 4:
+      return "gold";
+    case 5:
       return "#ff5100";
     default:
       return "transparent";
