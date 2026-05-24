@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { observer } from "mobx-react-lite";
 import { Project } from "../classes/Project";
 import { getRarityColor, MediaPreview } from "./MediaPreview";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faShuffle, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faFolderTree, faGrip, faShuffle, faStar } from '@fortawesome/free-solid-svg-icons';
 import { Button, ButtonGroup } from "react-bootstrap";
 
 export const PreviewGallery: React.FC = observer(() => {
@@ -21,22 +21,6 @@ export const PreviewGallery: React.FC = observer(() => {
   const [maxRating, setMaxRating] = useState<number>(5);
 
   const [recursive, setRecursive] = useState<boolean>(false);
-
-  // Ensure hooks are always called
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !folder) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      console.log("wheel");
-      e.preventDefault();
-      if (e.deltaY > 0) setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-      else if (e.deltaY < 0) setCurrentPage((prev) => Math.max(prev - 1, 1));
-    };
-
-    container.addEventListener("wheel", handleWheel);
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [folder]);
 
   useEffect(() => {
     if (!folder || !recursive) return;
@@ -70,29 +54,71 @@ export const PreviewGallery: React.FC = observer(() => {
 
   const [shuffle, setShuffle] = useState<boolean>(false);
   const [autorate, setAutorate] = useState<boolean>(false);
-
-  const sourceFiles = useMemo(() => {
-    if (!folder) return [];
-    return recursive ? folder.files_recursive : folder.files;
-  }, [recursive, folder])
-
-
-  const filteredFiles = useMemo(() => {
-    const files = sourceFiles.filter(
-      (media) => media.rating >= minRating && media.rating <= maxRating
-    );
-
-    if (shuffle) {
-      const shuffled = [...files];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  /*
+    const sourceFiles = useMemo(() => {
+      if (!folder) return [];
+      return recursive ? folder.files_recursive : folder.files;
+    }, [recursive, folder])
+  
+  
+    const filteredFiles = useMemo(() => {
+      const files = sourceFiles.filter(
+        (media) => media.rating >= minRating && media.rating <= maxRating
+      );
+  
+      if (shuffle) {
+        const shuffled = [...files];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
       }
-      return shuffled;
-    }
+  
+      return files.sort((a, b) => a.name.localeCompare(b.name));
+    }, [minRating, maxRating, shuffle, sourceFiles]);
+  */
 
-    return files.sort((a, b) => a.name.localeCompare(b.name));
-  }, [minRating, maxRating, shuffle, sourceFiles]);
+  const sourceFiles = !folder ? [] : recursive ? folder.files_recursive : folder.files;
+  const filteredFiles = sourceFiles.filter(
+    (media) =>
+      media.rating >= minRating &&
+      media.rating <= maxRating
+  );
+
+  if (shuffle) {
+    filteredFiles.sort(() => Math.random() - 0.5);
+  } else {
+    filteredFiles.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }
+
+  const [showGridPicker, setShowGridPicker] = useState(false)
+  const SIZE = 6;
+  const [hovered, setHovered] = React.useState<any>(null);
+
+  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const mediaToShow = filteredFiles.slice(startIndex, endIndex);
+
+  // Ensure hooks are always called
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !folder) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      console.log("wheel delta", e.deltaY);
+      e.preventDefault();
+      if (e.deltaY > 0) setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+      else if (e.deltaY < 0) setCurrentPage((prev) => Math.max(prev - 1, 1));
+    };
+
+    container.addEventListener("wheel", handleWheel);
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [folder,totalPages]);
+
 
 
   if (!folder) return <div>No folder selected.</div>;
@@ -111,10 +137,7 @@ export const PreviewGallery: React.FC = observer(() => {
   </>;
 
 
-  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / itemsPerPage));
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const mediaToShow = filteredFiles.slice(startIndex, endIndex);
+
 
   // Pagination handlers
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -122,22 +145,87 @@ export const PreviewGallery: React.FC = observer(() => {
   const handleFirst = () => setCurrentPage(1);
   const handleLast = () => setCurrentPage(totalPages);
 
+
+
+
   return (
     <div ref={containerRef} style={{ padding: "1rem" }}>
       {/* Settings */}
       <div style={{ marginBottom: "1rem", display: "flex", gap: "1rem", alignItems: "center" }}>
-        <label>
-          <input
-            type="checkbox"
-            checked={recursive}
-            onChange={(e) => {
-              setRecursive(e.target.checked);
+
+        <ButtonGroup className="me-2" aria-label="rating group">
+
+          <Button
+            variant={recursive ? "primary" : "outline-secondary"}
+            onClick={() => {
+              setRecursive((prev) => !prev);
               setCurrentPage(1);
             }}
-          />
-          Recursive
-        </label>
+            title="Recursive"
+          >
+            <FontAwesomeIcon icon={faFolderTree} />
+          </Button>
 
+          <Button
+            variant={showGridPicker ? "primary" : "outline-secondary"}
+            onClick={() => setShowGridPicker((prev) => !prev)}
+            style={{ position: "relative" }}
+          >
+            <FontAwesomeIcon icon={faGrip} />
+
+            {showGridPicker && (
+              <div
+                style={{
+                  position: "absolute",
+                  background: "black",
+                  zIndex: 999,
+                  padding: 4,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${SIZE}, 20px)`,
+                    gap: 4,
+                  }}
+                >
+                  {Array.from({ length: SIZE * SIZE }).map((_, i) => {
+                    const x = i % SIZE;
+                    const y = Math.floor(i / SIZE);
+
+                    const isHovered =
+                      hovered &&
+                      x <= hovered.x &&
+                      y <= hovered.y;
+
+                    return (
+                      <div
+                        key={i}
+                        onMouseEnter={() => setHovered({ x, y })}
+                        onClick={() => {
+                          console.log("clicked:", x + 1, y + 1)
+                          setColumns(x + 1)
+                          setItemsPerPage((x + 1) * (y + 1));
+                          setCurrentPage(1);
+                        }}
+                        style={{
+                          width: 20,
+                          height: 20,
+                          background: isHovered ? "#00aaff" : "#444",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                          transition: "0.1s",
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </Button>
+
+
+          {/**
         <label>
           Columns:{" "}
           <input
@@ -162,36 +250,11 @@ export const PreviewGallery: React.FC = observer(() => {
             }}
             style={{ width: "3rem" }}
           />
-        </label>
-        <label>
-          Page:{" "}
-          <input
-            type="number"
-            min={1}
-            max={totalPages}
-            value={currentPage}
-            onChange={(e) => {
-              const page = Number(e.target.value);
-              if (!isNaN(page)) setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-            }}
-            style={{ width: "3rem" }}
-          />
-          / {totalPages}
-        </label>
+        </label> 
+         */}
 
-        <ButtonGroup className="me-2" aria-label="rating group">
-          {[0, 1, 2, 3, 4, 5].map((rating) => (
-            <RatingButton
-              key={rating}
-              rating={rating}
-              count={folder.ratingStats.ratings[rating - 1]}
-              onClick={setMinRating}
-            />
-          ))}
-        </ButtonGroup>
-
+          {/**
         <label>
-          Min rating{" "}
           <input
             type="number"
             min={0}
@@ -202,9 +265,7 @@ export const PreviewGallery: React.FC = observer(() => {
           />
         </label>
 
-
         <label>
-          Max rating{" "}
           <input
             type="number"
             min={0}
@@ -214,26 +275,40 @@ export const PreviewGallery: React.FC = observer(() => {
             style={{ width: "3rem" }}
           />
         </label>
+         */}
 
-        <Button
-          variant={shuffle ? "warning" : "outline-secondary"}
-          onClick={() => {
-            setShuffle((prev) => !prev);
-            setCurrentPage(1);
-          }}
-        >
-          <FontAwesomeIcon icon={faShuffle} />
-        </Button>
+          <Button
+            variant={shuffle ? "warning" : "outline-secondary"}
+            onClick={() => {
+              setShuffle((prev) => !prev);
+              setCurrentPage(1);
+            }}
+          >
+            <FontAwesomeIcon icon={faShuffle} />
+          </Button>
 
-        <Button
-          variant={autorate ? "warning" : "outline-secondary"}
-          title="autorate"
-          onClick={() => { setAutorate((prev) => !prev); }}
-        >
-          <FontAwesomeIcon icon={faEye} />
-        </Button>
+          <Button
+            variant={autorate ? "warning" : "outline-secondary"}
+            title="autorate"
+            onClick={() => { setAutorate((prev) => !prev); }}
+          >
+            <FontAwesomeIcon icon={faEye} />
+          </Button>
 
+        </ButtonGroup>
 
+        <ButtonGroup className="me-2" aria-label="rating group">
+          {[0, 1, 2, 3, 4, 5].map((rating) => (
+            <RatingButton
+              key={rating}
+              rating={rating}
+              count={folder.ratingStats.ratings[rating - 1]}
+              setMinRating={setMinRating}
+              setMaxRating={setMaxRating}
+              isActive={rating >= minRating && rating <= maxRating}
+            />
+          ))}
+        </ButtonGroup>
       </div>
 
       {/* Gallery Grid */}
@@ -259,7 +334,19 @@ export const PreviewGallery: React.FC = observer(() => {
             Prev
           </button>
           <span style={{ alignSelf: "center" }}>
-            Page {currentPage} / {totalPages}
+            Page :
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const page = Number(e.target.value);
+                if (!isNaN(page)) setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+              }}
+              style={{ width: "3rem" }}
+            />
+            / {totalPages}
           </span>
           <button onClick={handleNext} disabled={currentPage === totalPages}>
             Next
@@ -280,20 +367,37 @@ export const PreviewGallery: React.FC = observer(() => {
 type RatingButtonProps = {
   rating: number;
   count: number;
-  onClick: (rating: number) => void;
+  setMinRating: (v: number) => void;
+  setMaxRating: (v: number) => void;
+  isActive?: boolean;
 };
 
 export default function RatingButton({
   rating,
   count,
-  onClick,
+  setMinRating,
+  setMaxRating,
+  isActive,
 }: RatingButtonProps) {
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      setMaxRating(rating);
+      setMinRating(rating);
+    } else {
+      setMinRating(rating);
+      setMaxRating(5);
+    }
+  };
+
   return (
     <Button
-      onClick={() => onClick(rating)}
+      onClick={handleClick}
       className="position-relative overflow-hidden"
       style={{
-        backgroundColor: getRarityColor(rating)
+        backgroundColor: getRarityColor(rating),
+        border: isActive ? "2px solid gold" : "2px solid transparent",
+        transition: "all 120ms ease",
       }}
     >
       <FontAwesomeIcon

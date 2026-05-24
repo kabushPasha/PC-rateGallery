@@ -30,7 +30,7 @@ export class MediaFolder {
                 //await subFolder.readContents();
                 folders.push(subFolder);
             } else if (handle.kind === "file") {
-                files.push(new Media(handle, this.path));
+                files.push(new Media(handle,this));
             }
         }
 

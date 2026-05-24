@@ -1,14 +1,17 @@
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import { Project } from "./Project";
+import type { MediaFolder } from "./MediaFolder";
 
 export class Media {
   fileHandle: FileSystemFileHandle;
+  parentFolder: MediaFolder;
   path: string = "";
   rating: number = 0; // observable rating
 
-  constructor(fileHandle: FileSystemFileHandle, path: string = "") {
+  constructor(fileHandle: FileSystemFileHandle, parentFolder: MediaFolder) {
     this.fileHandle = fileHandle;
-    this.path = path + "/" + fileHandle.name;
+    this.parentFolder = parentFolder;
+    this.path = parentFolder.path + "/" + fileHandle.name;
 
     // make all properties observable
     makeAutoObservable(this);
@@ -33,5 +36,18 @@ export class Media {
     this.rating = value;
     const project = Project.getInstance();
     project.database?.setMedia(this, { rating: value });
+  }
+
+  async delete() {
+    try {
+      // remove file from filesystem
+      await this.parentFolder.root_folder.removeEntry(this.name);
+      // remove from in-memory folder list
+      runInAction(() => {
+        this.parentFolder.files = this.parentFolder.files.filter(f => f !== this);
+      })
+    } catch (err) {
+      console.error("Failed to delete media:", err);
+    }
   }
 }

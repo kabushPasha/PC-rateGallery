@@ -52,13 +52,21 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [media]);
 
-  useEffect(() => {    
+  useEffect(() => {
     // First time seen add base rating
-    if(media.rating == 0 && autorate ){      
+    if (media.rating == 0 && autorate) {
       media.setRating(1);
-    }},[media,autorate])
+    }
+  }, [media, autorate])
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  const handleClick = async (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+
+    if (e.ctrlKey ) {
+      e.stopPropagation();
+      await media.delete();
+      return;
+    }
+
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const clickX = e.clientX - rect.left;
 

@@ -97,7 +97,7 @@ export class Database {
       // If we don’t have a file handle yet, create it
       if (!this.dbFileHandle) {
         const handle = await (this.folder.root_folder as any).getFileHandle("rating_database.json", { create: true });
-        this.dbFileHandle = new Media(handle); // wrap it in Media
+        this.dbFileHandle = new Media(handle,this.folder); // wrap it in Media
         this.folder.files.push(this.dbFileHandle); // add to folder
       }
 
