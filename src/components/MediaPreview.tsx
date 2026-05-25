@@ -61,11 +61,11 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
 
   const handleClick = async (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
 
-    if (e.ctrlKey ) {
+    /*if (e.ctrlKey ) {
       e.stopPropagation();
       await media.delete();
       return;
-    }
+    }*/
 
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -73,7 +73,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
     if (clickX > rect.width / 2) {
       media.setRating(Math.min(media.rating + 1, maxRating));
     } else {
-      media.setRating(Math.max(media.rating - 1, 0));
+      media.setRating(Math.max(media.rating - 1, -1));
     }
   };
 
@@ -159,6 +159,8 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
 // Add this helper above return()
 export const getRarityColor = (rating: number) => {
   switch (rating) {
+    case -1:
+      return "#ff0000";
     case 0:
       return "#202020";
     case 1:

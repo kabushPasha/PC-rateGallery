@@ -77,19 +77,19 @@ export class MediaFolder {
     }
 
     get ratingStats(): { total: number; ratings: number[] } {
-        const ratings = [0, 0, 0, 0, 0];
+        const ratings = [0,0,0, 0, 0, 0, 0];
         let total = 0;
 
         // count current folder
         for (const file of this.files) {
             total++;
 
-            if (file.rating >= 1 && file.rating <= 5) {
-                ratings[file.rating - 1]++;
+            if (file.rating >= -1 && file.rating <= 5) {
+                ratings[file.rating+1 ]++;
             }
         }
 
-        // include subfolders (recursive)
+        // include subfolders (recursive)s
         for (const folder of this.folders) {
             const sub = folder.ratingStats;
 

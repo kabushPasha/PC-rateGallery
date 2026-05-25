@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { observer } from "mobx-react-lite";
 import { Project } from "../classes/Project";
 import { getRarityColor, MediaPreview } from "./MediaPreview";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faFolderTree, faGrip, faShuffle, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faEye, faFolderTree, faGrip, faShuffle, faStar, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Button, ButtonGroup } from "react-bootstrap";
 
 export const PreviewGallery: React.FC = observer(() => {
@@ -54,45 +54,47 @@ export const PreviewGallery: React.FC = observer(() => {
 
   const [shuffle, setShuffle] = useState<boolean>(false);
   const [autorate, setAutorate] = useState<boolean>(false);
-  /*
-    const sourceFiles = useMemo(() => {
-      if (!folder) return [];
-      return recursive ? folder.files_recursive : folder.files;
-    }, [recursive, folder])
-  
-  
-    const filteredFiles = useMemo(() => {
-      const files = sourceFiles.filter(
-        (media) => media.rating >= minRating && media.rating <= maxRating
-      );
-  
-      if (shuffle) {
-        const shuffled = [...files];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-      }
-  
-      return files.sort((a, b) => a.name.localeCompare(b.name));
-    }, [minRating, maxRating, shuffle, sourceFiles]);
-  */
 
-  const sourceFiles = !folder ? [] : recursive ? folder.files_recursive : folder.files;
-  const filteredFiles = sourceFiles.filter(
-    (media) =>
-      media.rating >= minRating &&
-      media.rating <= maxRating
-  );
+  const sourceFiles = useMemo(() => {
+    if (!folder) return [];
+    return recursive ? folder.files_recursive : folder.files;
+  }, [recursive, folder])
 
-  if (shuffle) {
-    filteredFiles.sort(() => Math.random() - 0.5);
-  } else {
-    filteredFiles.sort((a, b) =>
-      a.name.localeCompare(b.name)
+
+  const filteredFiles = useMemo(() => {
+    const files = sourceFiles.filter(
+      (media) => media.rating >= minRating && media.rating <= maxRating
     );
-  }
+
+    if (shuffle) {
+      const shuffled = [...files];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    return files.sort((a, b) => a.name.localeCompare(b.name));
+  }, [minRating, maxRating, shuffle, sourceFiles]);
+
+
+  /*
+const sourceFiles = !folder ? [] : recursive ? folder.files_recursive : folder.files;
+const filteredFiles = sourceFiles.filter(
+  (media) =>
+    media.rating >= minRating &&
+    media.rating <= maxRating
+);
+
+if (shuffle) {
+  filteredFiles.sort(() => Math.random() - 0.5);
+} else {
+  filteredFiles.sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+  */
 
   const [showGridPicker, setShowGridPicker] = useState(false)
   const SIZE = 6;
@@ -117,7 +119,23 @@ export const PreviewGallery: React.FC = observer(() => {
 
     container.addEventListener("wheel", handleWheel);
     return () => container.removeEventListener("wheel", handleWheel);
-  }, [folder,totalPages]);
+  }, [folder, totalPages]);
+
+  const handleDelete = useCallback(() => {
+    const neg_rate_files = sourceFiles.filter((media) => media.rating == -1);
+    if (neg_rate_files.length === 0) return;
+    const ok = window.confirm(
+      `delete ${neg_rate_files.length} files?`
+    );
+    if (!ok) return;
+
+    for (const file of neg_rate_files) {
+      console.log("Deleting ", file.name);
+      file.delete()
+    }
+  }, [filteredFiles])
+
+
 
 
 
@@ -137,15 +155,13 @@ export const PreviewGallery: React.FC = observer(() => {
   </>;
 
 
-
-
   // Pagination handlers
   const handlePrev = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNext = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   const handleFirst = () => setCurrentPage(1);
   const handleLast = () => setCurrentPage(totalPages);
 
-
+  const negativeCount = sourceFiles.filter(m => m.rating === -1).length;
 
 
   return (
@@ -298,17 +314,47 @@ export const PreviewGallery: React.FC = observer(() => {
         </ButtonGroup>
 
         <ButtonGroup className="me-2" aria-label="rating group">
-          {[0, 1, 2, 3, 4, 5].map((rating) => (
+          {[-1, 0, 1, 2, 3, 4, 5].map((rating) => (
             <RatingButton
               key={rating}
               rating={rating}
-              count={folder.ratingStats.ratings[rating - 1]}
+              count={folder.ratingStats.ratings[rating + 1]}
               setMinRating={setMinRating}
               setMaxRating={setMaxRating}
               isActive={rating >= minRating && rating <= maxRating}
             />
           ))}
         </ButtonGroup>
+
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <Button
+            variant="outline-danger"
+            onClick={handleDelete}
+          >
+            <FontAwesomeIcon icon={faTrash} />
+          </Button>
+
+          {negativeCount > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                top: -6,
+                right: -6,
+                background: "red",
+                color: "white",
+                borderRadius: "999px",
+                padding: "2px 6px",
+                fontSize: "0.7rem",
+                fontWeight: "bold",
+                lineHeight: 1,
+                minWidth: "18px",
+                textAlign: "center",
+              }}
+            >
+              {negativeCount}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Gallery Grid */}
