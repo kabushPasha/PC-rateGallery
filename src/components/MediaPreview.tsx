@@ -34,6 +34,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = observer(({
           case "webm": mimeType = "video/webm"; break;
           case "ogg": mimeType = "video/ogg"; break;
           case "mkv": mimeType = "video/mkv"; break;
+          case "mov": mimeType = "video/quicktime"; break;
           case "jpg": case "jpeg": mimeType = "image/jpeg"; break;
           case "png": mimeType = "image/png"; break;
           case "gif": mimeType = "image/gif"; break;
